@@ -1,0 +1,81 @@
+# LangGraph Tool Schema Reference
+# This schema shows how to format tools for LangGraph/LangChain integration
+
+# Example tool definition
+tools:
+  - name: send_email  # Tool name (lowercase with underscores)
+    description: "Send an email to one or more recipients."  # Clear description of what the tool does
+    
+    # Parameters that the tool accepts
+    parameters:
+      - name: emails  # Parameter name
+        type: array  # Parameter type (string, number, boolean, array, object)
+        items:  # For array type, specify the type of items
+          type: string
+        required: true  # Whether this parameter is required
+        description: "One or more email addresses to send the email to."
+      
+      - name: subject
+        type: string
+        required: false
+        description: "Subject of the email."
+      
+      - name: body
+        type: string
+        required: false
+        description: "Body content of the email."
+    
+    # Function that will be called when this tool is used
+    function:
+      name: execute_n8n_tool  # The function name in LangGraph
+      webhook_url: "https://n8n-instance.com/webhook/emails"  # The n8n webhook URL to call
+    
+    # Return value information
+    returns:
+      description: "Result of the email sending operation."
+      schema:
+        type: object
+        properties:
+          status:
+            type: string
+            description: "Status of the operation (success or error)"
+          message:
+            type: string
+            description: "Additional information about the result"
+
+# Example of another tool
+  - name: create_calendar_event
+    description: "Create a new calendar event."
+    parameters:
+      - name: title
+        type: string
+        required: true
+        description: "Title of the calendar event."
+      - name: start_time
+        type: string
+        required: true
+        description: "Start time of the event in ISO format (YYYY-MM-DDTHH:MM:SS)."
+      - name: end_time
+        type: string
+        required: true
+        description: "End time of the event in ISO format (YYYY-MM-DDTHH:MM:SS)."
+      - name: attendees
+        type: array
+        items:
+          type: string
+        required: false
+        description: "List of email addresses for attendees."
+    function:
+      name: execute_n8n_tool
+      webhook_url: "https://n8n-instance.com/webhook/calendar"
+    returns:
+      description: "Result of the calendar event creation."
+      schema:
+        type: object
+        properties:
+          event_id:
+            type: string
+            description: "ID of the created event"
+          status:
+            type: string
+            description: "Status of the operation"

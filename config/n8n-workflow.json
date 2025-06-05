@@ -1,0 +1,132 @@
+{
+  "data": [
+    {
+      "createdAt": "2025-05-29T05:54:58.879Z",
+      "updatedAt": "2025-05-29T05:54:58.879Z",
+      "id": "1ppUF3noIm5q13tB",
+      "name": "My workflow",
+      "active": false,
+      "nodes": [
+        {
+          "parameters": {
+            "path": "e94d6b57-81f3-485a-9138-9e923e7dfadb",
+            "options": {}
+          },
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [0, 0],
+          "id": "1279ea0b-138f-4503-ba21-203a91ac8d55",
+          "name": "Webhook",
+          "webhookId": "e94d6b57-81f3-485a-9138-9e923e7dfadb"
+        }
+      ],
+      "connections": {},
+      "settings": {
+        "executionOrder": "v1"
+      },
+      "staticData": null,
+      "meta": null,
+      "pinData": {},
+      "versionId": "81692956-18e9-437f-909f-98fb39388fa6",
+      "triggerCount": 0,
+      "tags": []
+    },
+    {
+      "createdAt": "2025-05-14T23:38:49.079Z",
+      "updatedAt": "2025-05-29T01:49:43.000Z",
+      "id": "vPNVro5NiR9LDBiP",
+      "name": "Send introduction email",
+      "active": false,
+      "nodes": [
+        {
+          "parameters": {
+            "jsCode": "// Access the payload directly from the JSON\nconst payload = items[0].json.payload;\n\nconst name = payload.name || 'Guest';\nconst email = payload.email || '';\n\nreturn [\n  {\n    json: {\n      name,\n      email\n    }\n  }\n];\n"
+          },
+          "type": "n8n-nodes-base.code",
+          "typeVersion": 2,
+          "position": [-240, -380],
+          "id": "b02f9f8f-d311-47f5-98a7-d088cf015cf9",
+          "name": "Code"
+        },
+        {
+          "parameters": {
+            "resource": "mail",
+            "fromEmail": "lasun.a@futurelabsgroups.com",
+            "fromName": "PTE Labs",
+            "toEmail": "={{ $json.email }}",
+            "dynamicTemplate": true,
+            "templateId": "d-8b377a462c7343749759c17ca5cb638c",
+            "dynamicTemplateFields": {
+              "fields": [
+                {
+                  "key": "={\n  \"name\": \"{{$json[\"name\"]}}\"\n}\n"
+                }
+              ]
+            },
+            "additionalFields": {}
+          },
+          "type": "n8n-nodes-base.sendGrid",
+          "typeVersion": 1,
+          "position": [-20, -380],
+          "id": "ec8f1226-d98c-4b73-93fb-a3b28a6d839e",
+          "name": "SendGrid",
+          "credentials": {
+            "sendGridApi": {
+              "id": "msxwsj62S6eYo3VE",
+              "name": "SendGrid account"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "calendly",
+            "options": {}
+          },
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [-440, -380],
+          "id": "d408db21-b79e-4ac6-bdf7-fa21cbef13b1",
+          "name": "Webhook",
+          "webhookId": "a448e6a1-b385-49c1-a379-c1cc85718765"
+        }
+      ],
+      "connections": {
+        "Code": {
+          "main": [
+            [
+              {
+                "node": "SendGrid",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Webhook": {
+          "main": [
+            [
+              {
+                "node": "Code",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "settings": {
+        "executionOrder": "v1"
+      },
+      "staticData": null,
+      "meta": {
+        "templateCredsSetupCompleted": true
+      },
+      "pinData": {},
+      "versionId": "0253e1a9-c5a3-457b-bc26-816e2a819987",
+      "triggerCount": 0,
+      "tags": []
+    }
+  ],
+  "nextCursor": null
+}
