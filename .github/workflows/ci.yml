@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.10'
+  POETRY_VERSION: '1.6.1'
+
+jobs:
+  test:
+    name: Test Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-latest]
+        # Exclude Python 3.12 on Windows until all dependencies support it
+        exclude:
+          - python-version: '3.12'
+            os: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install system dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential \
+          libffi-dev \
+          libssl-dev \
+          python3-dev
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: ${{ env.POETRY_VERSION }}
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+        installer-parallel: true
+
+    - name: Set up cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pypoetry/virtualenvs/
+          ~/.cache/pypoetry/artifacts/
+          ~/.cache/pypoetry/cache/
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+
+    - name: Install dependencies
+      run: |
+        poetry install --no-interaction --no-ansi --with dev,test,docs
+        poetry run pip install -U pip setuptools wheel
+
+    - name: Lint with pre-commit
+      run: |
+        poetry run pre-commit run --all-files --show-diff-on-failure
+
+    - name: Run tests with coverage
+      run: |
+        poetry run pytest \
+          --cov=src \
+          --cov-report=xml \
+          --cov-report=term \
+          --durations=10 \
+          --junitxml=junit/test-results.xml \
+          --cov-fail-under=80 \
+          tests/
+
+    - name: Upload coverage to Codecov
+      if: success() && github.event_name != 'schedule'
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        fail_ci_if_error: false
+        verbose: true
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-${{ matrix.os }}-py${{ matrix.python-version }}
+        path: |
+          junit/test-results.xml
+          coverage.xml
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit semgrep
+
+      - name: Run safety check
+        run: safety check --full-report
+
+      - name: Run bandit
+        run: bandit -r src/ -c pyproject.toml -f json -o bandit-results.json || true
+
+      - name: Run semgrep
+        run: semgrep --config=auto --error --json -o semgrep-results.json . || true
+
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-scan-results
+          path: |
+            bandit-results.json
+            semgrep-results.json
+
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[docs]
+
+      - name: Build documentation
+        run: |
+          cd docs
+          make html
+          touch _build/html/.nojekyll
+
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs/_build/html
+          branch: gh-pages
+          clean: true
+          clean-exclude: |
+            CNAME
+            .nojekyll
+
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, security, docs]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true
+          verbose: true

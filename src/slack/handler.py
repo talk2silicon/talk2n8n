@@ -39,13 +39,13 @@ class SlackHandler:
         # Register app_mention handler
         self.app.event("app_mention")(self.handle_app_mention)
         
-        logger.info("Registered Slack event handlers")
+        # Event handlers registered
     
     def start(self):
         """Start the Slack handler."""
         # Start the app
         handler = SocketModeHandler(self.app, os.getenv("SLACK_APP_TOKEN"))
-        logger.info("Starting Slack handler...")
+        # Start handler
         handler.start()
     
     def handle_message(self, message, say):
@@ -64,7 +64,7 @@ class SlackHandler:
         user_id = message.get("user")
         text = message.get("text", "")
         
-        logger.info(f"Received message from user {user_id}: {text}")
+        # Message received
         
         # Process the message with the agent
         # This will return an immediate acknowledgment
@@ -87,7 +87,7 @@ class SlackHandler:
         # Remove the bot mention from the text
         text = text.split(">", 1)[1].strip() if ">" in text else text
         
-        logger.info(f"Received app mention from user {user_id}: {text}")
+        # App mention received
         
         # Process the message with the agent
         response = self.agent.process_message(text)

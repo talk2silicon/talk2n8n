@@ -5,6 +5,7 @@ import os
 import sys
 import logging
 import asyncio
+import pytest
 from dotenv import load_dotenv
 
 # Ensure parent directory is in path for relative imports
@@ -13,7 +14,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/..")
 from agent.agent import Agent
 from n8n.tool_registry import ToolRegistry
 from n8n.client import N8nClient
-from n8n.workflow_converter import WorkflowConverter
 
 # Configure logging
 logging.basicConfig(
@@ -29,70 +29,36 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+@pytest.mark.asyncio
 async def test_workflow_fetch():
     """Test fetching workflows from n8n."""
-    logger.info("Testing workflow fetch")
     n8n_client = N8nClient()
     workflows = n8n_client.get_workflows()
     
     if not workflows:
-        logger.info("No workflows found in n8n")
         print("No workflows found in n8n")
         return
     
-    logger.info(f"Found {len(workflows)} workflows")
     print(f"Found {len(workflows)} workflows:")
     for workflow in workflows:
-        logger.info(f"Workflow: {workflow.get('name')} (ID: {workflow.get('id')})")
         print(f"- {workflow.get('name')} (ID: {workflow.get('id')})")
 
-async def test_tool_conversion():
-    """Test converting workflows to tools using the Python-based converter."""
-    logger.info("Testing tool conversion with Python-based converter")
-    n8n_client = N8nClient()
-    workflow_converter = WorkflowConverter(n8n_client.base_url)
-    
-    workflows = n8n_client.get_workflows()
-    if not workflows:
-        logger.info("No workflows found in n8n")
-        print("No workflows found in n8n")
-        return
-    
-    logger.info(f"Converting {len(workflows)} workflows to tools")
-    print(f"Converting {len(workflows)} workflows to tools:")
-    for workflow in workflows:
-        tool = workflow_converter.convert_workflow_to_tool(workflow)
-        if tool:
-            logger.info(f"Tool: {tool.get('name')} ({len(tool.get('parameters', []))} parameters)")
-            logger.info(f"Webhook URL: {tool.get('webhook_url')}")
-            logger.info(f"Description: {tool.get('description')}")
-            logger.info(f"Parameters: {tool.get('parameters')}")
-            print(f"- {tool.get('name')} ({len(tool.get('parameters', []))} parameters)")
-            print(f"  Webhook URL: {tool.get('webhook_url')}")
-            print(f"  Description: {tool.get('description')}")
-            print(f"  Parameters: {tool.get('parameters')}")
-            print()
-        else:
-            logger.info(f"Failed to convert workflow {workflow.get('name')}")
-            print(f"- Failed to convert workflow {workflow.get('name')}")
+# Removed test_tool_conversion function as it relied on WorkflowConverter
 
+@pytest.mark.asyncio
 async def test_llm_tool_conversion():
     """Test converting workflows to tools using the LLM-powered converter."""
-    logger.info("Testing LLM-powered workflow-to-tool conversion")
     n8n_client = N8nClient()
-    workflow_converter = WorkflowConverter(n8n_client.base_url)
     
-    # Create a tool registry with debug logging enabled
-    tool_registry = ToolRegistry(n8n_client, workflow_converter)
+    # Create a tool registry
+    tool_registry = ToolRegistry(n8n_client)
     
     # Fetch workflows from n8n
     workflows = n8n_client.get_workflows()
     if not workflows:
-        logger.info("No workflows found in n8n")
         print("No workflows found in n8n")
         return
     
-    logger.info(f"Found {len(workflows)} workflows. Submitting to LLM for conversion...")
     print(f"Found {len(workflows)} workflows. Submitting to LLM for conversion...")
     
     # Patch the tool_registry to capture LLM response
@@ -107,12 +73,11 @@ async def test_llm_tool_conversion():
         # Fetch workflows from n8n
         workflows = tool_registry.n8n_client.get_workflows()
         if not workflows:
-            logger.warning("No workflows found in n8n")
             return
         
         # Load the LangGraph tool schema
         schema_content = tool_registry._load_langgraph_schema()
-        logger.info(f"Loaded LangGraph schema, {len(schema_content)} bytes")
+        # Schema loaded
         
         # Prepare prompt for Claude
         prompt = (
@@ -129,13 +94,12 @@ async def test_llm_tool_conversion():
         
         # Create LLM client and submit prompt
         llm_client = LLMClient()
-        logger.info("Submitting workflows to Claude for LangGraph tool conversion...")
+        # Submit to LLM
         llm_response = llm_client.generate_response(prompt, tools=[])
         
         # Store the raw response for inspection
         llm_responses.append(llm_response.get("content", ""))
-        logger.info("Claude LLM responded with conversion result")
-        logger.debug(f"Raw LLM response:\n{llm_responses[-1]}")
+        # LLM responded
         print(f"\nLLM Response:\n{'-'*50}")
         print(llm_responses[-1][:500] + "..." if len(llm_responses[-1]) > 500 else llm_responses[-1])
         print(f"{'-'*50}\n")
@@ -164,7 +128,7 @@ async def test_llm_tool_conversion():
             elif isinstance(parsed_yaml, list):
                 tools = parsed_yaml
                 
-            logger.info(f"Successfully parsed {len(tools)} tools from Claude's response")
+            # Tools parsed
             print(f"Successfully parsed {len(tools)} tools from Claude's response")
             
             # Convert the parsed tools to our internal format
@@ -199,34 +163,30 @@ async def test_llm_tool_conversion():
                 print(f"  Description: {tool.get('description', '')}")
                 print(f"  Webhook URL: {webhook_url}")
                 print(f"  Parameters: {len(parameters)}")
-                logger.info(f"Converted tool: {json.dumps(tool_def, indent=2)}")
-            logger.info(f"Loaded {len(tool_registry.tools)} tools from Claude LLM LangGraph tool conversion")
+            # Tools loaded
         except Exception as e:
-            logger.error(f"Failed to parse LangGraph tools from Claude response: {e}")
-            logger.error(f"Response content: {llm_response.get('content', '')}")
+            logger.error(f"Failed to parse tools: {e}")
             print(f"Error parsing LLM response: {e}")
-            print("Falling back to traditional workflow conversion...")
-            tool_registry._fallback_refresh_tools(workflows)
+            print("Error occurred during LLM tool conversion")
     tool_registry.refresh_tools = patched_refresh
     tool_registry.refresh_tools()
     tool_registry.refresh_tools = original_refresh
     tools = tool_registry.get_tools()
-    logger.info(f"Final tool count: {len(tools)}")
     print(f"\nFinal tool count: {len(tools)}")
     for tool in tools:
         print(f"- {tool.get('name')}: {tool.get('description')}")
         print(f"  Parameters: {[p.get('name') for p in tool.get('parameters', [])]}")
         print()
-        logger.info(f"Final tool: {tool}")
+        # Tool registered
 
 
+@pytest.mark.asyncio
 async def test_interactive_agent():
     """Test the agent interactively."""
-    logger.info("Initializing agent for testing")
+    # Initialize agent
     # Initialize components
     n8n_client = N8nClient()
-    workflow_converter = WorkflowConverter(n8n_client.base_url)
-    tool_registry = ToolRegistry(n8n_client, workflow_converter)
+    tool_registry = ToolRegistry(n8n_client)
     
     # Create the LangGraph-based agent
     agent = Agent(tool_registry)
@@ -235,10 +195,8 @@ async def test_interactive_agent():
     #tool_registry.refresh_tools()
     tools = tool_registry.get_tools()
     
-    logger.info(f"Available tools ({len(tools)}):") 
     print(f"Available tools ({len(tools)}):")    
     for tool in tools:
-        logger.info(f"Tool: {tool.get('name')}: {tool.get('description')}")
         print(f"- {tool.get('name')}: {tool.get('description')}")
     
     print("\nEnter 'quit' to exit")
@@ -249,10 +207,10 @@ async def test_interactive_agent():
             # Get user input
             user_input = input("\nEnter your message: ")
             if user_input.lower() == "quit":
-                logger.info("Test completed")
+                # Test completed
                 break
             elif user_input.lower() == "refresh":
-                logger.info("Refreshing tools from n8n")
+                # Refresh tools
                 refresh_result = agent.refresh_tools()
                 print(f"\n{refresh_result}")
                 
@@ -264,14 +222,13 @@ async def test_interactive_agent():
                 continue
             
             logger.info(f"User input: {user_input}")
-            # Process the message with the LangGraph agent
+            # Process message with the LangGraph agent
             logger.info("Processing message...")
             response = agent.process_message(user_input)
             logger.info(f"Agent response: {response}")
-            print(f"\nAgent response: {response}")
             
         except KeyboardInterrupt:
-            logger.info("Test interrupted by user")
+            # Test interrupted
             break
         except Exception as e:
             logger.error(f"Test error: {e}", exc_info=True)
@@ -279,7 +236,7 @@ async def test_interactive_agent():
 
 async def main():
     """Main function."""
-    logger.info("Starting interactive test script")
+    # Start test script
     print("n8n AI Agent Interactive Test")
     print("============================")
     print("Running in interactive mode only")

@@ -1,0 +1,168 @@
+[build-system]
+requires = ["setuptools>=67.0.0", "wheel", "setuptools-scm[toml]>=7.1.0"]
+build-backend = "setuptools.build_meta"
+
+# Enable setuptools-scm for version management
+[tool.setuptools_scm]
+write_to = "src/talk2n8n/_version.py"
+
+[project]
+name = "talk2n8n"
+version = "0.1.0"
+description = "A tool for interacting with n8n workflows through natural language"
+readme = "README.md"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+maintainers = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "langchain-core>=0.1.20",
+    "langchain-openai>=0.1.1",
+    "langgraph>=0.0.26",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.0.0",
+    "langchain-anthropic>=0.1.8",
+    "supabase>=1.0.3",
+    "fastapi>=0.95.0",
+    "uvicorn[standard]>=0.22.0",
+    "python-multipart>=0.0.6",
+    "colorama>=0.4.6",
+    "slack-bolt>=1.18.0",
+    "pyngrok>=6.0.0",
+    "cryptography>=41.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/talk2n8n"
+Documentation = "https://github.com/yourusername/talk2n8n#readme"
+Repository = "https://github.com/yourusername/talk2n8n"
+Changelog = "https://github.com/yourusername/talk2n8n/blob/main/CHANGELOG.md"
+Issues = "https://github.com/yourusername/talk2n8n/issues"
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    # Testing
+    "pytest>=7.3.1",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.10.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-xdist>=3.2.0",
+    "pytest-testmon>=2.0.4",
+    "pytest-randomly>=3.12.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-icdiff>=0.6",
+    "pytest-sugar>=0.9.6",
+    "pytest-html>=4.0.2",
+    "pytest-socket>=0.6.0",
+    "pytest-timeout>=2.1.0",
+    "responses>=0.23.1",
+    
+    # Linting & Formatting
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "flake8>=6.0.0",
+    "flake8-bugbear>=23.3.12",
+    "flake8-docstrings>=1.7.0",
+    "pre-commit>=3.0.0",
+    
+    # Documentation
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "sphinx-autodoc-typehints>=1.22.0",
+    "myst-parser>=1.0.0",
+    "sphinx-copybutton>=0.5.0",
+    "sphinxext-opengraph>=0.8.0",
+    
+    # Packaging & Distribution
+    "build>=0.10.0",
+    "twine>=4.0.0",
+    "wheel>=0.40.0",
+    "setuptools>=67.0.0",
+    "setuptools-scm>=7.1.0",
+    
+    # Development tools
+    "ipython>=8.12.0",
+    "ipdb>=0.13.9",
+    "jupyter>=1.0.0",
+    "jupyterlab>=3.6.0",
+    "notebook>=6.5.0",
+    "pip-tools>=6.13.0",
+    "safety>=2.3.5",
+    "bandit>=1.7.4",
+    "semgrep>=1.17.0",
+    "mypy-extensions>=1.0.0",
+]
+
+[project.scripts]
+talk2n8n = "talk2n8n.cli:main"
+
+[tool.poetry.scripts]
+lint = "pre-commit run --all-files"
+format = "black ."
+test = "pytest tests/"
+coverage = "pytest --cov=talk2n8n --cov-report=term-missing tests/"
+docs = "sphinx-build -b html docs/ docs/_build/html"
+serve-docs = "python -m http.server --directory docs/_build/html 8000"
+check = "poetry run pre-commit run --all-files"
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+python_classes = "Test*"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["agent*", "n8n*", "slack*", "config*"]

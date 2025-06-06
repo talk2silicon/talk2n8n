@@ -1,0 +1,27 @@
+{
+  "name": "send_email",
+  "description": "Send an email to one or more recipients.",
+  "method": "POST",
+  "path": "/webhook/send-email",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "emails": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Recipient email addresses"
+      },
+      "subject": {
+        "type": "string",
+        "description": "Subject line"
+      },
+      "body": {
+        "type": "string",
+        "description": "Email content"
+      }
+    },
+    "required": ["emails"]
+  }
+}

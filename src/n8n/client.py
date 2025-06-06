@@ -1,70 +1,45 @@
 """
 n8n API client for interacting with n8n workflows.
 """
-import os
-import requests
+# Standard library imports
 import logging
-from typing import Dict, Any, List, Optional
-from dotenv import load_dotenv
-import pathlib
+from typing import Any, Dict, List, Optional
+
+# Third-party imports
+import requests
+
+# Local application imports
+from src.config.settings import settings
+
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-# Load environment variables from the n8n_agent directory
-n8n_agent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-env_path = os.path.join(n8n_agent_dir, '.env')
-
-# Check if the .env file exists
-if os.path.exists(env_path):
-    logger.info(f"Loading environment variables from: {env_path}")
-    load_dotenv(env_path)
-    
-    # Check and log important environment variables
-    required_vars = [
-        "N8N_WEBHOOK_BASE_URL",
-        "N8N_BASE_URL",
-        "N8N_API_KEY",
-        "CLAUDE_API_KEY",
-        "CLAUDE_MODEL"
-    ]
-    
-    for var in required_vars:
-        value = os.getenv(var)
-        if value:
-            # Mask API keys in logs
-            if "KEY" in var and value:
-                masked_value = value[:5] + "..." + value[-5:] if len(value) > 10 else "***masked***"
-                logger.info(f"{var}: {masked_value}")
-            else:
-                logger.info(f"{var}: {value}")
-        else:
-            logger.warning(f"Environment variable {var} not found or empty")
-else:
-    logger.warning(f"Environment file not found at {env_path}, using default values")
-    # Try loading from parent directory as fallback
-    parent_env_path = os.path.join(os.path.dirname(n8n_agent_dir), '.env')
-    if os.path.exists(parent_env_path):
-        logger.info(f"Loading environment variables from parent directory: {parent_env_path}")
-        load_dotenv(parent_env_path)
-
-
 class N8nClient:
     """Client for interacting with n8n API and webhooks."""
     
-    def __init__(self, base_url=None, api_key=None):
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None):
         """
         Initialize the n8n client.
         
         Args:
-            base_url: Base URL of the n8n instance (default: from env)
-            api_key: API key for n8n (default: from env)
+            base_url: Base URL of the n8n instance (default: from config)
+            api_key: API key for n8n (default: from config)
         """
-        self.base_url = base_url or os.getenv("N8N_BASE_URL", "https://n8n-app-young-feather-1595.fly.dev")
-        self.api_key = api_key or os.getenv("N8N_API_KEY")
+        self.base_url = base_url or settings.N8N_BASE_URL or settings.N8N_WEBHOOK_BASE_URL
+        self.api_key = api_key or settings.N8N_API_KEY
         
+        # Set up requests session with default headers
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Content-Type": "application/json",
+            "X-N8N-API-KEY": self.api_key or ""
+        })
+        
+        if not self.base_url:
+            logger.warning("Neither N8N_BASE_URL nor N8N_WEBHOOK_BASE_URL is set in config")
         if not self.api_key:
-            logger.warning("N8N_API_KEY not set. API calls will likely fail.")
+            logger.warning("N8N_API_KEY not set in config")
     
     def get_workflows(self) -> Optional[List[Dict[str, Any]]]:
         """
@@ -79,18 +54,14 @@ class N8nClient:
         }
         
         try:
-            response = requests.get(
+            response = self.session.get(
                 f"{self.base_url}/api/v1/workflows",
-                headers=headers,
                 timeout=10
             )
             response.raise_for_status()
             return response.json().get("data", [])
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching workflows: {e}")
-            if hasattr(e, 'response') and e.response:
-                logger.error(f"Status code: {e.response.status_code}")
-                logger.error(f"Response: {e.response.text}")
+        except Exception as e:
+            logger.error(f"Failed to fetch workflows: {e}")
             return None
     
     def get_workflow(self, workflow_id: str) -> Optional[Dict[str, Any]]:
@@ -109,15 +80,14 @@ class N8nClient:
         }
         
         try:
-            response = requests.get(
+            response = self.session.get(
                 f"{self.base_url}/api/v1/workflows/{workflow_id}",
-                headers=headers,
                 timeout=10
             )
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error fetching workflow {workflow_id}: {e}")
+            logger.error(f"Error fetching workflow: {e}")
             return None
             
     def extract_webhook_path(self, workflow_data: Dict[str, Any]) -> str:
@@ -138,7 +108,7 @@ class N8nClient:
             webhook_nodes = [node for node in nodes if node.get("type") == "n8n-nodes-base.webhook"]
             
             if not webhook_nodes:
-                logger.warning("No webhook nodes found in workflow")
+                # No webhook nodes
                 return ""
                 
             # Get the first webhook node's path from parameters
@@ -152,11 +122,11 @@ class N8nClient:
             if not path and "webhookId" in webhook_node:
                 path = f"webhook/{webhook_node['webhookId']}"
                 
-            logger.info(f"Extracted webhook path: {path}")
+            # Webhook path extracted
             return path
             
         except Exception as e:
-            logger.error(f"Error extracting webhook path: {e}")
+            logger.error(f"Webhook extraction error: {e}")
             return ""
     
     def get_webhook_url(self, workflow_data: Dict[str, Any]) -> str:
@@ -173,11 +143,15 @@ class N8nClient:
         if not path:
             return ""
             
-        # Use the fixed URL from environment
-        base_url = "https://n8n-app-young-feather-1595.fly.dev/webhook-test"
-        full_url = f"{base_url}/{path}"
+        # Use the webhook base URL from client
+        if not self.base_url:
+            logger.warning("No base URL available for webhook")
+            return ""
+            
+        # Construct the full webhook URL
+        full_url = f"{self.base_url.rstrip('/')}/{path}"
         
-        logger.info(f"Constructed webhook URL: {full_url}")
+        # Webhook URL constructed
         return full_url
     
     def trigger_webhook(self, webhook_url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -192,34 +166,34 @@ class N8nClient:
             Response from the webhook
         """
         try:
-            logger.info(f"Triggering webhook: {webhook_url}")
-            logger.debug(f"Payload: {payload}")
+            # Triggering webhook
             
             # If webhook_url is a relative path, make it absolute
             if not webhook_url.startswith("http"):
                 webhook_url = f"{self.base_url}{webhook_url if webhook_url.startswith('/') else '/' + webhook_url}"
             
             # First try POST method
-            logger.info("Trying POST method first...")
+            # Try POST
             try:
-                response = requests.post(
+                response = self.session.post(
                     webhook_url,
                     json=payload,
                     timeout=10
                 )
                 response.raise_for_status()
-                logger.info("POST request successful")
-            except requests.exceptions.RequestException as e:
-                logger.warning(f"POST request failed: {e}. Trying GET method...")
+                # POST successful
+            except Exception as e:
+                # Continue with GET request for any exception
+                # POST failed, trying GET
                 
                 # If POST fails, try GET with params
-                response = requests.get(
+                response = self.session.get(
                     webhook_url,
                     params=payload,
                     timeout=10
                 )
                 response.raise_for_status()
-                logger.info("GET request successful")
+                # GET successful
             
             # Parse response
             result = response.json() if response.text else {}
@@ -229,8 +203,8 @@ class N8nClient:
                 "data": result
             }
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error triggering webhook: {e}")
+        except Exception as e:
+            logger.error(f"Webhook error: {e}")
             
             error_response = {
                 "status": "error",

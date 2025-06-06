@@ -17,7 +17,7 @@
           "position": [0, 0],
           "id": "1279ea0b-138f-4503-ba21-203a91ac8d55",
           "name": "Webhook",
-          "webhookId": "e94d6b57-81f3-485a-9138-9e923e7dfadb"
+          "webhookId": "your-webhook-id-1"
         }
       ],
       "connections": {},
@@ -51,11 +51,11 @@
         {
           "parameters": {
             "resource": "mail",
-            "fromEmail": "lasun.a@futurelabsgroups.com",
-            "fromName": "PTE Labs",
+            "fromEmail": "your-email@example.com",
+            "fromName": "My Name",
             "toEmail": "={{ $json.email }}",
             "dynamicTemplate": true,
-            "templateId": "d-8b377a462c7343749759c17ca5cb638c",
+            "templateId": "your-template-id",
             "dynamicTemplateFields": {
               "fields": [
                 {
@@ -72,7 +72,7 @@
           "name": "SendGrid",
           "credentials": {
             "sendGridApi": {
-              "id": "msxwsj62S6eYo3VE",
+              "id": "your-sendgrid-api-id",
               "name": "SendGrid account"
             }
           }
@@ -88,7 +88,7 @@
           "position": [-440, -380],
           "id": "d408db21-b79e-4ac6-bdf7-fa21cbef13b1",
           "name": "Webhook",
-          "webhookId": "a448e6a1-b385-49c1-a379-c1cc85718765"
+          "webhookId": "your-webhook-id-2"
         }
       ],
       "connections": {
