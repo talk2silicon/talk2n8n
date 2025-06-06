@@ -1,6 +1,6 @@
 # talk2n8n
 
-An intelligent AI agent that integrates with n8n workflows and Slack, allowing you to trigger n8n workflows through natural language in Slack.
+An intelligent AI agent that integrates with n8n workflows, allowing you to trigger n8n workflows through natural language using Claude AI.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -8,23 +8,20 @@ An intelligent AI agent that integrates with n8n workflows and Slack, allowing y
 
 ## Features
 
-- 🤖 AI-powered workflow interaction through Slack
-- 🔄 Automatic conversion of n8n workflows to LLM tools
+- 🤖 AI-powered workflow interaction using Claude
+- 🔄 LLM-based workflow-to-tool conversion
 - 🔌 Simple webhook integration with n8n
-- 🧠 Uses Claude AI to understand and process requests
-- ⚡ Asynchronous processing for time-consuming tasks
-- 🔒 Secure handling of API keys and sensitive data
-- 🌐 Easy deployment to cloud platforms
+- 🧠 Intelligent parameter extraction
+- ⚡ Fast and reliable execution
+- 🔒 Secure handling of API keys
 
 ## Architecture
 
 The n8n AI Agent uses a clean, modular architecture with the following components:
 
 1. **N8nClient**: Communicates with the n8n API to fetch workflows and trigger webhooks
-2. **LLM-powered Workflow Analysis**: Uses Claude AI to analyze n8n workflows and extract tool definitions
-3. **ToolRegistry**: Manages the collection of tools extracted from n8n workflows
-4. **Agent**: Processes messages using LLM and executes selected tools
-5. **SlackHandler**: Handles incoming Slack messages and routes them to the Agent
+2. **ToolService**: Manages workflow-to-tool conversion and execution using Claude AI
+3. **Agent**: Processes user requests and executes appropriate tools
 
 ## Setup
 
@@ -32,7 +29,6 @@ The n8n AI Agent uses a clean, modular architecture with the following component
 
 - Python 3.9+
 - n8n instance with API access
-- Slack workspace with bot permissions
 - Claude API key from Anthropic
 
 ### Installation
@@ -56,48 +52,34 @@ The n8n AI Agent uses a clean, modular architecture with the following component
 
 ## Configuration
 
-1. Copy the example environment file and update it with your settings:
-   ```bash
-   cp .env.example .env
-   ```
+Set up your environment variables:
 
-2. Edit the `.env` file with your configuration:
-   ```env
-   # ========== Required Settings ==========
-   
-   # n8n Configuration
-   N8N_WEBHOOK_BASE_URL=https://your-n8n-instance.com
-   N8N_API_KEY=your-n8n-api-key
-   N8N_ENV=test  # 'test', 'development', 'staging', or 'production'
-   
-   # Claude API Configuration (required for workflow conversion)
-   CLAUDE_API_KEY=your-claude-api-key
-   CLAUDE_MODEL=claude-3-opus-20240229  # or another supported model
+```env
+# n8n Configuration
+N8N_WEBHOOK_BASE_URL=https://your-n8n-instance.com
+N8N_API_KEY=your-n8n-api-key
+N8N_ENV=test  # 'test', 'development', 'staging', or 'production'
 
-   # ========== Optional Settings ==========
-   
-   # Logging
-   LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-   
-   # Slack Integration (optional)
-   # SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
-   # SLACK_SIGNING_SECRET=your-slack-signing-secret
-   # SLACK_APP_TOKEN=xapp-your-slack-app-token
-   ```
+# Claude API Configuration
+CLAUDE_API_KEY=your-claude-api-key
+CLAUDE_MODEL=claude-3-opus-20240229
 
-### Environment Variables
+# Logging
+LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
 
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `N8N_WEBHOOK_BASE_URL` | Yes | Base URL of your n8n instance | - |
-| `N8N_API_KEY` | Yes | API key for n8n authentication | - |
-| `N8N_ENV` | No | Environment: 'test', 'development', 'staging', or 'production' | 'test' |
-| `CLAUDE_API_KEY` | Yes | API key for Anthropic's Claude API | - |
-| `CLAUDE_MODEL` | No | Claude model to use | 'claude-3-opus-20240229' |
-| `LOG_LEVEL` | No | Logging level | 'INFO' |
-| `SLACK_BOT_TOKEN` | No | Slack bot token (required for Slack integration) | - |
-| `SLACK_SIGNING_SECRET` | No | Slack signing secret (required for Slack integration) | - |
-| `SLACK_APP_TOKEN` | No | Slack app token (required for Socket Mode) | - |
+### Running the Agent
+
+Start the interactive agent:
+
+```bash
+python examples/simple.py
+```
+
+This will allow you to:
+1. Interact with n8n workflows through natural language
+2. Test workflow execution
+3. See the LLM-based workflow conversion in action
 
 ### Configuration Best Practices
 
@@ -144,41 +126,6 @@ For your n8n workflows to be compatible with the agent:
 3. Parameters should be well-defined in the workflow
 4. Workflows should have clear names and descriptions for better LLM analysis
 5. Consider adding comments to complex nodes to help the LLM understand their purpose
-
-## Deployment to fly.io
-
-To deploy the agent to fly.io:
-
-1. Install the flyctl CLI:
-   ```bash
-   curl -L https://fly.io/install.sh | sh
-   ```
-
-2. Login to fly.io:
-   ```bash
-   flyctl auth login
-   ```
-
-3. Create a new app:
-   ```bash
-   flyctl launch
-   ```
-
-4. Set secrets:
-   ```bash
-   flyctl secrets set N8N_API_KEY=your-n8n-api-key
-   flyctl secrets set N8N_BASE_URL=https://your-n8n-instance.com
-   flyctl secrets set SLACK_BOT_TOKEN=xoxb-your-slack-bot-token
-   flyctl secrets set SLACK_SIGNING_SECRET=your-slack-signing-secret
-   flyctl secrets set SLACK_APP_TOKEN=xapp-your-slack-app-token
-   flyctl secrets set CLAUDE_API_KEY=your-claude-api-key
-   flyctl secrets set CLAUDE_MODEL=claude-3-opus-20240229
-   ```
-
-5. Deploy the app:
-   ```bash
-   flyctl deploy
-   ```
 
 ## Contributing
 
