@@ -70,15 +70,7 @@ LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 ### Running the Agent
 
-Start the agent with:
-
-```bash
-python -m main
-```
-
-### Testing Interactively
-
-You can test the agent interactively without Slack:
+Start the interactive agent:
 
 ```bash
 python -m tests.test_interactive
@@ -103,27 +95,6 @@ This will allow you to:
 3. **Testing**:
    - Use `N8N_ENV=test` for testing to avoid affecting production data
    - Create a separate n8n instance for testing if possible
-
-### Running the Agent
-
-Start the agent with:
-
-```bash
-python -m main
-```
-
-### Testing Interactively
-
-You can test the agent interactively without Slack:
-
-```bash
-python -m tests.test_interactive
-```
-
-This will allow you to:
-1. Test fetching workflows from n8n
-2. Test the LLM-based workflow conversion
-3. Test the agent interactively with your own messages
 
 ## n8n Workflow Setup
 
