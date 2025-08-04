@@ -115,8 +115,7 @@ Thumbs.db
 config/n8n-workflow.json
 
 # Documentation
-docs/_build/
-docs/api/
+docs/
 
 # Jupyter Notebook
 .ipynb_checkpoints
