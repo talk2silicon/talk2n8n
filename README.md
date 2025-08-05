@@ -1,119 +1,223 @@
 # talk2n8n
 
-An intelligent AI agent that integrates with n8n workflows, allowing you to trigger n8n workflows through natural language using Claude AI.
+Seamlessly execute any hosted n8n workflow (with a webhook trigger node) using everyday natural language. Instantly turn your words into workflow actions with Claude AI.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+---
+
+**talk2n8n lets you trigger and interact with your hosted n8n workflows (webhook nodes only) using natural language—no technical knowledge required.**
+
+- Effortlessly execute any n8n webhook workflow just by describing what you want in plain English
+- Instantly connect your words to workflow actions powered by Claude AI
+- Works with any n8n instance, securely and reliably
+
+---
+
 ## Features
 
-- 🤖 AI-powered workflow interaction using Claude
-- 🔄 LLM-based workflow-to-tool conversion
-- 🔌 Simple webhook integration with n8n
-- 🧠 Intelligent parameter extraction
-- ⚡ Fast and reliable execution
-- 🔒 Secure handling of API keys
+- 🤖 Natural language to workflow execution (Claude/OpenAI)
+- 🔄 LLM-powered workflow-to-tool conversion
+- 🧩 Seamless n8n webhook integration
+- 🧠 Intelligent parameter extraction and validation
+- ⚡ Fast, robust, and extensible architecture
+- 🔒 Secure API key and environment management
+- 🖥️ Interactive CLI and modern Gradio chat UI
 
-## Architecture
+---
 
-The n8n AI Agent uses a clean, modular architecture with the following components:
+## Execution Flow
 
-1. **N8nClient**: Communicates with the n8n API to fetch workflows and trigger webhooks
-2. **ToolService**: Manages workflow-to-tool conversion and execution using Claude AI
-3. **Agent**: Processes user requests and executes appropriate tools
+**How talk2n8n works (end-to-end):**
 
-## Setup
+1. **Entry Points:**
+   - Gradio Chat UI (`examples/chat.py`)
+   - CLI Interactive Agent (`examples/simple.py`)
+   - (Optional) Slack Integration (`src/talk2n8n/slack/handler.py`)
 
-### Prerequisites
+2. **User Input:**
+   - User sends a natural language request (e.g., "Send introduction email to John using the email as john@gmail.com")
 
-- Python 3.9+
-- n8n instance with API access
-- Claude API key from Anthropic
+3. **Agent Core (`src/talk2n8n/agent/agent.py`):**
+   - Receives the user message
+   - Loads all available webhook workflows from the hosted n8n instance
+   - Uses LangGraph state machine to decide if a tool (workflow) should be called
+   - LLM (Claude/OpenAI) interprets the request and selects the appropriate tool/workflow
 
-### Installation
+4. **ToolService (`src/talk2n8n/n8n/tool_service.py`):**
+   - Converts n8n webhook workflows into callable tools using LLM analysis
+   - Extracts required parameters from the user's message
+   - Maintains a registry of available tools
+   - Handles execution and error recovery
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/talk2n8n.git
-   cd talk2n8n
-   ```
+5. **n8n Client (`src/talk2n8n/n8n/client.py`):**
+   - Constructs the correct webhook URL for the workflow
+   - Sends an HTTP POST with extracted parameters to the hosted n8n webhook
 
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+6. **n8n Workflow Execution:**
+   - The workflow runs on your n8n instance
+   - Results (success/failure, output data) are returned to the Agent
 
-3. Install dependencies:
-   ```bash
-   pip install -e .
-   ```
+7. **Agent Responds:**
+   - The Agent returns the result to the user in the chat UI, CLI, or Slack
 
-## Configuration
+**Visual Overview:**
 
-Set up your environment variables:
-
-```env
-# n8n Configuration
-N8N_WEBHOOK_BASE_URL=https://your-n8n-instance.com
-N8N_API_KEY=your-n8n-api-key
-N8N_ENV=test  # 'test', 'development', 'staging', or 'production'
-
-# Claude API Configuration
-CLAUDE_API_KEY=your-claude-api-key
-CLAUDE_MODEL=claude-3-opus-20240229
-
-# Logging
-LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+```
+[User (Chat/CLI/Slack)]
+        │
+        ▼
+   [Agent (LangGraph, LLM)]
+        │
+        ▼
+ [ToolService (LLM Conversion, Registry, Exec)]
+        │
+        ▼
+    [n8n Client]
+        │
+        ▼
+ [Hosted n8n Webhook Workflow]
+        │
+        ▼
+     [Result to User]
 ```
 
-### Running the Agent
+- All workflow discovery, conversion, and execution are automatic.
+- Only workflows with webhook trigger nodes on a reachable hosted n8n instance are supported.
+- Secure API key and environment management is enforced throughout.
 
-Start the interactive agent:
+---
+
+## Project Structure
+
+```
+talk2n8n/
+│
+├── src/
+│   └── talk2n8n/
+│       ├── agent/         # Core Agent and state machine
+│       ├── n8n/           # n8n API client, tool service, tool factory
+│       ├── config/        # Settings, schemas, and workflow configs
+│       ├── slack/         # Slack integration (optional)
+│       └── utils/         # Utilities
+│
+├── examples/
+│   ├── chat.py            # Gradio chat UI (modern, recommended)
+│   └── simple.py          # CLI/interactive agent
+│
+├── tests/                 # Unit and integration tests
+├── .github/               # CI/CD workflows
+├── pyproject.toml         # Project metadata and dependencies (Poetry)
+├── README.md
+└── ...
+```
+
+---
+
+## Quickstart
+
+### 1. Clone and Install
 
 ```bash
-python -m tests.test_interactive
+git clone https://github.com/yourusername/talk2n8n.git
+cd talk2n8n
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -e .
+```
+Or with Poetry:
+```bash
+poetry install
+poetry shell
 ```
 
-This will allow you to:
-1. Test fetching workflows from n8n
-2. Test the LLM-based workflow conversion
-3. Test the agent interactively with your own messages
+### 2. Configuration
 
-### Configuration Best Practices
+Copy `.env.example` to `.env` and fill in your secrets:
 
-1. **Security**:
-   - Never commit your `.env` file to version control
-   - Use environment variables or a secret management service in production
-   - Rotate API keys and tokens regularly
+```env
+N8N_WEBHOOK_BASE_URL=https://your-n8n-instance.com
+N8N_API_KEY=your-n8n-api-key
+CLAUDE_API_KEY=your-claude-api-key
+CLAUDE_MODEL=claude-3-haiku-20240307
+N8N_ENV=development
+LOG_LEVEL=INFO
+```
 
-2. **Performance**:
-   - Set `LOG_LEVEL=WARNING` in production to reduce log noise
-   - For development, use `LOG_LEVEL=DEBUG` for detailed logging
+> **Never commit your `.env` file to version control!**
 
-3. **Testing**:
-   - Use `N8N_ENV=test` for testing to avoid affecting production data
-   - Create a separate n8n instance for testing if possible
+---
 
-## n8n Workflow Setup
+## Usage
 
-For your n8n workflows to be compatible with the agent:
+### Gradio Chat UI
 
-1. Each workflow should have a webhook node as its trigger
-2. The webhook should have a clear path (e.g., `/send-email`)
-3. Parameters should be well-defined in the workflow
-4. Workflows should have clear names and descriptions for better LLM analysis
-5. Consider adding comments to complex nodes to help the LLM understand their purpose
+```bash
+PYTHONPATH=src python examples/chat.py
+```
+- Access the chat UI in your browser.
+- Try: `Send introduction email to John using the email as john@gmail.com`
+
+### Interactive CLI
+
+```bash
+PYTHONPATH=src python examples/simple.py
+```
+- Use the CLI to interact with the agent and trigger workflows.
+
+---
+
+## n8n Workflow Requirements
+
+- Each workflow must have a webhook trigger node.
+- Webhook paths should be clear (e.g., `/send-intro-email`).
+- Parameters must be well-defined for LLM extraction.
+- Name and describe workflows for best results.
+
+---
+
+## Development
+
+- Code style: [black](https://github.com/psf/black), [flake8](https://flake8.pycqa.org/)
+- Type checking: [mypy](http://mypy-lang.org/)
+- Pre-commit hooks: `.pre-commit-config.yaml`
+- Run tests: `pytest`
+
+### Run all checks
+
+```bash
+./quality_check.sh
+```
+
+---
+
+## CI/CD
+
+- GitHub Actions for lint, test, type-check, and security.
+- See `.github/workflows/` for details.
+
+---
 
 ## Contributing
 
-We welcome contributions to talk2n8n! Please see our [Contributing Guide](CONTRIBUTING.md) for more details on how to get started. All contributors are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+---
 
 ## Security
 
-For information about security practices and how to report security issues, please see our [Security Policy](SECURITY.md).
+For security issues, see [SECURITY.md](SECURITY.md).
+
+---
 
 ## License
 
-[MIT](LICENSE) © 2025 talk2n8n Contributors
+[MIT](LICENSE) 2025 talk2n8n Contributors
+
+---
+
+## Credits
+
+Inspired by [talk2browser](https://github.com/talk2silicon/talk2browser).
