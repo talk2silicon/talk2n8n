@@ -36,6 +36,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Default prompt for quick testing; set to None to disable auto-run
+DEFAULT_PROMPT = None
+
 def interactive_mode(agent: Agent) -> None:
     """Run the agent in interactive mode.
     
@@ -44,6 +47,12 @@ def interactive_mode(agent: Agent) -> None:
     """
     print("\n=== n8n AI Agent ===")
     print("Type 'exit' to quit, 'refresh' to reload workflows, 'help' for help")
+
+    # Auto-run the default prompt if set
+    if DEFAULT_PROMPT:
+        print(f"\n[Auto] You: {DEFAULT_PROMPT}")
+        response = agent.run(DEFAULT_PROMPT)
+        print(f"Agent: {response}")
     
     while True:
         try:

@@ -75,8 +75,8 @@ class ToolService:
         
         try:
             workflows = self.n8n_client.get_workflows()
-            
             for workflow in workflows:
+                logger.info(f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}")
                 if tool := self._convert_workflow_to_tool(workflow):
                     # Add webhook URL
                     prefix = 'webhook-test' if self._env == 'test' else 'webhook'
@@ -137,17 +137,15 @@ class ToolService:
             tool = self.get_tool(tool_name)
             if not tool:
                 raise ToolNotFoundError(f"Tool '{tool_name}' not found")
-            
+            logger.info(f"Calling tool '{tool_name}' with params: {json.dumps(params, indent=2)}")
             # Get webhook URL
             webhook_url = tool["webhook_url"]
             if not webhook_url:
                 raise ToolExecutionError(f"No webhook URL for tool '{tool_name}'")
-            
             # Make HTTP request
             response = self.n8n_client.trigger_webhook(webhook_url, params)
             logger.info(f"Tool execution completed: {tool_name}")
             return response
-            
         except Exception as e:
             logger.error(f"Error executing tool '{tool_name}': {e}")
             return {
@@ -178,7 +176,7 @@ class ToolService:
             
             # Get LLM response
             response = self.llm.invoke(messages)
-            
+            logger.info(f"LLM output for workflow '{workflow.get('name', '')}': {response.content}")
             # Parse response
             try:
                 tool_def = json.loads(response.content)

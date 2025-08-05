@@ -17,6 +17,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
+from langchain.tools import StructuredTool
+from pydantic import create_model, Field
 
 # Local application imports
 from src.n8n.client import N8nClient
@@ -24,8 +26,27 @@ from src.n8n.tool_service import ToolService
 
 
 # Configure logging
+from src.config.settings import settings
+
+def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
+    """Convert JSON schema to Pydantic model for tool argument validation."""
+    type_map = {
+        'string': str,
+        'integer': int,
+        'boolean': bool,
+        'number': float,
+    }
+    fields = {}
+    required = set(schema.get('required', []))
+    for prop, prop_schema in schema['properties'].items():
+        typ = type_map.get(prop_schema.get('type'), str)
+        default = ... if prop in required else None
+        desc = prop_schema.get('description', '')
+        fields[prop] = (typ, Field(default, description=desc))
+    return create_model(model_name, **fields)
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
@@ -109,33 +130,30 @@ class Agent:
         
         # Get tools from the service
         n8n_tools = self.tool_service.list_tools()
-        # Using tools from registry
         
-        # Create tool node
-        
-        # Create LangChain tools directly from the registry tools
-        from langchain_core.tools import Tool
         langchain_tools = []
-        
+
         for tool_def in n8n_tools:
             tool_name = tool_def.get('name')
             tool_description = tool_def.get('description', '')
             
-            # Create a function to execute the tool
+            # Build Pydantic model from input_schema
+            input_schema = tool_def.get('input_schema') or tool_def.get('parameters')
+            args_model = json_schema_to_pydantic_model(input_schema, model_name=tool_name.title() + "Params")
+
             def make_tool_executor(tool_name):
-                def execute_tool(*args, **kwargs):
-                    # Execute the tool directly with parameters
+                def execute_tool(**kwargs):
+                    logging.info(f"Calling tool '{tool_name}' with kwargs: {kwargs}")
                     result = self.tool_service.execute_tool(tool_name, kwargs)
                     return result
                 return execute_tool
-            
-            # Create the tool
-            langchain_tool = Tool(
+
+            langchain_tool = StructuredTool(
                 name=tool_name,
                 description=tool_description,
+                args_schema=args_model,
                 func=make_tool_executor(tool_name)
             )
-            
             langchain_tools.append(langchain_tool)
         
         # Create the ToolNode with the tools
