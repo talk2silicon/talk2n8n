@@ -121,7 +121,7 @@ talk2n8n/
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/yourusername/talk2n8n.git
+git clone https://github.com/talk2silicon/talk2n8n.git
 cd talk2n8n
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
