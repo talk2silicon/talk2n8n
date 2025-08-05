@@ -1,5 +1,9 @@
 # talk2n8n
 
+<p align="center">
+  <img src="assets/demo_optimized.gif" alt="talk2n8n demo" width="700">
+</p>
+
 Seamlessly execute any hosted n8n workflow (with a webhook trigger node) using everyday natural language. Instantly turn your words into workflow actions with Claude AI.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
