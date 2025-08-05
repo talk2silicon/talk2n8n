@@ -22,8 +22,8 @@ load_dotenv(project_root / ".env")
 from langchain_anthropic import ChatAnthropic
 
 # Local application imports
-from src.agent.agent import Agent
-from src.config.settings import settings
+from talk2n8n.agent.agent import Agent
+from talk2n8n.config.settings import settings
 
 
 # Configure logging
@@ -67,7 +67,7 @@ def interactive_mode(agent: Agent) -> None:
                 break
                 
             if user_input.lower() == 'refresh':
-                print("Refreshing tools from n8n...")
+                print("Refreshing tools from talk2n8n.n8n...")
                 try:
                     agent.refresh_tools()
                     print("Tools refreshed successfully!")

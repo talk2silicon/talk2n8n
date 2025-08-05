@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 # Local application imports
-from src.config.settings import settings
+from talk2n8n.config.settings import settings
 
 
 # Initialize logger

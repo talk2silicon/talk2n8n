@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from urllib.parse import urljoin
 
 from langchain.schema import HumanMessage, SystemMessage
-from .client import N8nClient
+from talk2n8n.n8n.client import N8nClient
 
 logger = logging.getLogger(__name__)
 

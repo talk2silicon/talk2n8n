@@ -50,6 +50,7 @@ dependencies = [
     "slack-bolt>=1.18.0",
     "pyngrok>=6.0.0",
     "cryptography>=41.0.0",
+    "gradio>=4.26.0",
 ]
 
 [project.urls]

@@ -7,7 +7,7 @@ import logging
 from typing import Any, Callable, Dict, Optional
 
 # Local application imports
-from src.config import settings
+from talk2n8n.config import settings
 
 
 # Initialize logger

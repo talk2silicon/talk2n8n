@@ -7,7 +7,7 @@ import os
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from agent.agent import Agent
+from talk2n8n.agent.agent import Agent
 
 logger = logging.getLogger(__name__)
 

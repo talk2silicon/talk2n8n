@@ -22,12 +22,12 @@ from langchain.tools import StructuredTool
 from pydantic import create_model, Field
 
 # Local application imports
-from src.n8n.client import N8nClient
-from src.n8n.tool_service import ToolService
+from talk2n8n.n8n.client import N8nClient
+from talk2n8n.n8n.tool_service import ToolService
 
 
 # Configure logging
-from src.config.settings import settings
+from talk2n8n.config.settings import settings
 
 
 def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
