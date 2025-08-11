@@ -62,7 +62,7 @@ class SlackHandler:
             return
 
         # Process the message
-        user_id = message.get("user")
+        # user_id = message.get("user")
         text = message.get("text", "")
 
         # Message received
@@ -82,7 +82,7 @@ class SlackHandler:
             event: App mention event from Slack
             say: Function to send a message to the channel
         """
-        user_id = event.get("user")
+        # user_id = event.get("user")
         text = event.get("text", "")
 
         # Remove the bot mention from the text

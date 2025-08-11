@@ -46,7 +46,7 @@ class ToolFactory:
 
             # Create a copy of the tool definition with additional metadata
             tool = tool_def.copy()
-            tool["webhook_url"] = f"{webhook_base_url}/{prefix}/{path}"
+            tool["webhook_url"] = f"{webhook_base_url}/{prefix}/{path}"  # noqa: E501
 
             # Add execute method if not present
             if "execute" not in tool:

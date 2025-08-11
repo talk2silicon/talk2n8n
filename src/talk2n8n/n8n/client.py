@@ -49,12 +49,10 @@ class N8nClient:
         Returns:
             List of workflow data if successful, None otherwise
         """
-        headers = {"X-N8N-API-KEY": self.api_key, "Accept": "application/json"}
-
         try:
             response = self.session.get(f"{self.base_url}/api/v1/workflows", timeout=10)
             response.raise_for_status()
-            return response.json().get("data", [])
+            return response.json().get("data", [])  # noqa: E501
         except Exception as e:
             logger.error(f"Failed to fetch workflows: {e}")
             return None
@@ -69,14 +67,12 @@ class N8nClient:
         Returns:
             Workflow data if successful, None otherwise
         """
-        headers = {"X-N8N-API-KEY": self.api_key, "Accept": "application/json"}
-
         try:
             response = self.session.get(
                 f"{self.base_url}/api/v1/workflows/{workflow_id}", timeout=10
             )
             response.raise_for_status()
-            return response.json()
+            return response.json()  # noqa: E501
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching workflow: {e}")
             return None
@@ -169,7 +165,7 @@ class N8nClient:
                 response = self.session.post(webhook_url, json=payload, timeout=10)
                 response.raise_for_status()
                 # POST successful
-            except Exception as e:
+            except Exception:
                 # Continue with GET request for any exception
                 # POST failed, trying GET
 
@@ -183,17 +179,17 @@ class N8nClient:
 
             return {"status": "success", "data": result}
 
-        except Exception as e:
-            logger.error(f"Webhook error: {e}")
+        except Exception as exc:
+            logger.error(f"Webhook error: {exc}")
 
-            error_response = {"status": "error", "message": str(e)}
+            error_response = {"status": "error", "message": str(exc)}
 
             # Add response details if available
-            if hasattr(e, "response") and e.response:
-                error_response["status_code"] = e.response.status_code
+            if hasattr(exc, "response") and exc.response:
+                error_response["status_code"] = exc.response.status_code
                 try:
-                    error_response["response"] = e.response.json()
-                except:
-                    error_response["response"] = e.response.text
+                    error_response["response"] = exc.response.json()
+                except Exception:
+                    error_response["response"] = exc.response.text
 
             return error_response

@@ -8,13 +8,12 @@ interact with n8n workflows, and execute tools based on user requests.
 # Standard library imports
 import logging
 import os
-from typing import Annotated, Any, Dict, List, Optional, Sequence, TypedDict, Union
+from typing import Annotated, Optional, Sequence, TypedDict
 
 # Third-party imports
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
@@ -116,7 +115,14 @@ class Agent:
         logger.info("Agent initialized with LLM: %s", self.llm.__class__.__name__)
 
     def _initialize_graph(self):
-        logger.info("Initializing Agent")
+        """Initialize LangGraph state machine for the agent."""
+        # Implementation details...
+
+        logger.info(
+            "ToolService initialized with n8n_base_url: %s, api_key: %s",
+            self.n8n_client.base_url,
+            self.n8n_client.api_key,
+        )
 
         # Refresh tools from n8n
         self.tool_service.sync_workflows()

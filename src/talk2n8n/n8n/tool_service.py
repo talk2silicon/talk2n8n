@@ -4,8 +4,6 @@ import json
 import logging
 import os
 from typing import Dict, Any, List, Optional
-from urllib.parse import urljoin
-
 from langchain.schema import HumanMessage, SystemMessage
 from talk2n8n.n8n.client import N8nClient
 
