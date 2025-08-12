@@ -31,7 +31,7 @@ from talk2n8n.config.settings import settings
 
 def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
     """Convert JSON schema to Pydantic model for tool argument validation."""
-    from pydantic import BaseModel, Field
+    from pydantic import Field, create_model
 
     type_map = {
         "string": str,
@@ -39,19 +39,20 @@ def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
         "boolean": bool,
         "number": float,
     }
-    fields = {}
+
     required = set(schema.get("required", []))
-    for prop, prop_schema in schema.get("properties", {}).items():
+    properties = schema.get("properties", {})
+
+    model_fields = {}
+    for prop, prop_schema in properties.items():
         typ = type_map.get(prop_schema.get("type"), str)
-        default = ... if prop in required else None
         desc = prop_schema.get("description", "")
-        fields[prop] = (typ, Field(default, description=desc))
-    # For pydantic v2, use type(...) to create the model
-    return type(
-        model_name,
-        (BaseModel,),
-        {k: v[1] if v[1] is not ... else (v[0], v[1]) for k, v in fields.items()},
-    )
+        if prop in required:
+            model_fields[prop] = (typ, Field(description=desc))
+        else:
+            model_fields[prop] = (typ, Field(default=None, description=desc))
+
+    return create_model(model_name, **model_fields)  # type: ignore
 
 
 logging.basicConfig(
@@ -108,7 +109,7 @@ class Agent:
         self.llm = llm or ChatAnthropic(
             model_name=os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229"),
             temperature=0.0,
-            api_key=api_key_secret,
+            api_key=api_key_secret.get_secret_value() if api_key_secret else None,  # type: ignore
             timeout=60,
             stop=None,
             base_url=None,
