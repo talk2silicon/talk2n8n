@@ -120,9 +120,12 @@ disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = "test_*.py"
 python_functions = "test_*"
 python_classes = "Test*"
+addopts = "-v --tb=short"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.setuptools.packages.find]
 where = ["src"]

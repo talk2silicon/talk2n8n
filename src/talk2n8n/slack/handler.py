@@ -8,6 +8,7 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from talk2n8n.agent.agent import Agent
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class SlackHandler:
     """Handler for Slack events."""
 
-    def __init__(self, agent: Agent = None):
+    def __init__(self, agent: Optional[Agent] = None):
         """
         Initialize the Slack handler.
 

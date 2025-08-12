@@ -18,7 +18,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from langchain.tools import StructuredTool
-from pydantic import create_model, Field
+
 
 # Local application imports
 from talk2n8n.n8n.client import N8nClient
@@ -31,6 +31,8 @@ from talk2n8n.config.settings import settings
 
 def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
     """Convert JSON schema to Pydantic model for tool argument validation."""
+    from pydantic import BaseModel, Field
+
     type_map = {
         "string": str,
         "integer": int,
@@ -39,12 +41,17 @@ def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
     }
     fields = {}
     required = set(schema.get("required", []))
-    for prop, prop_schema in schema["properties"].items():
+    for prop, prop_schema in schema.get("properties", {}).items():
         typ = type_map.get(prop_schema.get("type"), str)
         default = ... if prop in required else None
         desc = prop_schema.get("description", "")
         fields[prop] = (typ, Field(default, description=desc))
-    return create_model(model_name, **fields)
+    # For pydantic v2, use type(...) to create the model
+    return type(
+        model_name,
+        (BaseModel,),
+        {k: v[1] if v[1] is not ... else (v[0], v[1]) for k, v in fields.items()},
+    )
 
 
 logging.basicConfig(
@@ -94,10 +101,17 @@ class Agent:
             n8n_api_key: API key for n8n (default: from N8N_API_KEY env var)
         """
         # Set up the LLM
+        from pydantic.v1.types import SecretStr
+
+        api_key = os.getenv("CLAUDE_API_KEY")
+        api_key_secret = SecretStr(api_key) if api_key is not None else None
         self.llm = llm or ChatAnthropic(
-            model=os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229"),
+            model_name=os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229"),
             temperature=0.0,
-            api_key=os.getenv("CLAUDE_API_KEY"),
+            api_key=api_key_secret,
+            timeout=60,
+            stop=None,
+            base_url=None,
         )
 
         # Initialize n8n client
@@ -129,7 +143,7 @@ class Agent:
         logger.info("Creating LangGraph with the tools from the tool service")
         self.graph = self._create_agent_graph()
 
-    def _create_agent_graph(self) -> StateGraph:
+    def _create_agent_graph(self):
         """Create the n8n AI Agent graph using the standard LangGraph pattern."""
         # Create agent graph
 
@@ -150,8 +164,10 @@ class Agent:
 
             # Build Pydantic model from input_schema
             input_schema = tool_def.get("input_schema") or tool_def.get("parameters")
+            if input_schema is None or not isinstance(input_schema, dict):
+                continue
             args_model = json_schema_to_pydantic_model(
-                input_schema, model_name=tool_name.title() + "Params"
+                input_schema, model_name=str(tool_name).title() + "Params"
             )
 
             def make_tool_executor(tool_name):
@@ -162,6 +178,8 @@ class Agent:
 
                 return execute_tool
 
+            if not isinstance(tool_name, str):
+                continue
             langchain_tool = StructuredTool(
                 name=tool_name,
                 description=tool_description,
@@ -188,8 +206,9 @@ class Agent:
         graph.add_edge("tools", "chatbot")
         graph.add_edge(START, "chatbot")
 
-        # Compile the graph
-        return graph.compile()
+        # Compile the graph and return the compiled version
+        compiled_graph = graph.compile()
+        return compiled_graph
 
     def _chatbot(self, state: AgentState):
         """Process the user message and generate a response."""
@@ -222,11 +241,11 @@ class Agent:
 
             # Invoke the model and return updated state
             response = model_with_tools.invoke(messages)
-            return {"messages": messages + [response]}
+            return {"messages": list(messages) + [response]}
         except Exception as e:
             logger.error(f"Error processing message: {e}")
             return {
-                "messages": messages
+                "messages": list(messages)
                 + [HumanMessage(content=f"Error processing your request: {str(e)}")]
             }
 
@@ -276,7 +295,7 @@ class Agent:
             if messages := result.get("messages", []):
                 for msg in reversed(messages):
                     if hasattr(msg, "content") and msg.content:
-                        return msg.content
+                        return str(msg.content)
 
             return "No response generated"
 

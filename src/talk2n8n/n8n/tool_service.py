@@ -59,6 +59,7 @@ class ToolExecutionError(ToolServiceError):
 
 
 class ToolService:
+    tools: Dict[str, Dict[str, Any]]
     """Service for managing n8n workflow tools with LLM-powered conversion."""
 
     def __init__(self, n8n_client: N8nClient, llm=None):
@@ -77,10 +78,12 @@ class ToolService:
     def sync_workflows(self) -> List[Dict[str, Any]]:
         """Download and convert all active workflows to tools using LLM."""
         logger.info("Syncing workflows to tools using LLM")
-        self.tools = {}  # Clear existing tools
+        self.tools = {}  # type: Dict[str, Dict[str, Any]]  # Clear existing tools
 
         try:
             workflows = self.n8n_client.get_workflows()
+            if not workflows:
+                return []
             for workflow in workflows:
                 logger.info(f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}")
                 if tool := self._convert_workflow_to_tool(workflow):
@@ -124,7 +127,7 @@ class ToolService:
         """
         return list(self.tools.values())
 
-    def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Execute a tool with parameters.
 
         Args:
@@ -187,7 +190,9 @@ class ToolService:
                 logger.info(
                     f"Successfully converted workflow {workflow.get('name')} to tool {tool_def.get('name')}"
                 )
-                return tool_def
+                if isinstance(tool_def, dict):
+                    return tool_def
+                return None
             except json.JSONDecodeError:
                 logger.error("Failed to parse LLM response as JSON")
                 return None

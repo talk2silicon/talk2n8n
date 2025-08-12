@@ -14,33 +14,25 @@ class Settings(BaseSettings):
     """Application settings with environment variable fallbacks."""
 
     # N8N Configuration
+    N8N_BASE_URL: Optional[str] = Field(
+        default=None,
+        description="Base URL for n8n instance (optional, overrides webhook base URL if set)",
+    )
     N8N_WEBHOOK_BASE_URL: str = Field(
-        ...,
-        env="N8N_WEBHOOK_BASE_URL",
-        description="Base URL for n8n webhooks (e.g., 'https://your-n8n-instance.com')",
+        ..., description="Base URL for n8n webhooks (e.g., 'https://your-n8n-instance.com')"
     )
-    N8N_API_KEY: Optional[str] = Field(
-        default=None, env="N8N_API_KEY", description="API key for n8n authentication"
-    )
+    N8N_API_KEY: Optional[str] = Field(default=None, description="API key for n8n authentication")
     N8N_ENV: str = Field(
-        default="development",
-        env="N8N_ENV",
-        description="Environment (development, test, staging, production)",
+        default="development", description="Environment (development, test, staging, production)"
     )
 
     # LLM Configuration
-    CLAUDE_API_KEY: Optional[str] = Field(
-        None, env="CLAUDE_API_KEY", description="API key for Anthropic's Claude API"
-    )
-    CLAUDE_MODEL: str = Field(
-        "claude-3-opus-20240229",
-        env="CLAUDE_MODEL",
-        description="Claude model to use (e.g., 'claude-3-opus-20240229')",
-    )
+    CLAUDE_API_KEY: str = Field(..., description="Claude API key for LLM access")
+    CLAUDE_MODEL: str = Field(..., description="Claude model name (e.g., 'claude-3-opus-20240229')")
 
     # Logging Configuration
     LOG_LEVEL: str = Field(
-        "INFO", env="LOG_LEVEL", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+        "INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
     )
 
     @validator("N8N_ENV")
@@ -51,14 +43,17 @@ class Settings(BaseSettings):
             raise ValueError(f"N8N_ENV must be one of {allowed}")
         return v
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra environment variables
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": True,
+        "extra": "ignore",
+        "env_prefix": "",
+    }
 
 
 # Create a single instance of settings to be imported throughout the app
-settings = Settings()
+# Settings instance will load values from .env and environment variables
+settings = Settings()  # type: ignore
 
 __all__ = ["settings"]

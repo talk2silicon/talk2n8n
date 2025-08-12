@@ -52,7 +52,10 @@ class N8nClient:
         try:
             response = self.session.get(f"{self.base_url}/api/v1/workflows", timeout=10)
             response.raise_for_status()
-            return response.json().get("data", [])  # noqa: E501
+            data = response.json().get("data", [])
+            if isinstance(data, list):
+                return data
+            return []
         except Exception as e:
             logger.error(f"Failed to fetch workflows: {e}")
             return None
@@ -72,7 +75,10 @@ class N8nClient:
                 f"{self.base_url}/api/v1/workflows/{workflow_id}", timeout=10
             )
             response.raise_for_status()
-            return response.json()  # noqa: E501
+            data = response.json()
+            if isinstance(data, dict):
+                return data
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching workflow: {e}")
             return None
@@ -101,6 +107,9 @@ class N8nClient:
             # Get the first webhook node's path from parameters
             webhook_node = webhook_nodes[0]
             path = webhook_node.get("parameters", {}).get("path", "")
+            # Ensure path is always a string
+            if not isinstance(path, str):
+                path = str(path) if path is not None else ""
 
             # Remove leading slash if present
             path = path.lstrip("/")
@@ -110,7 +119,7 @@ class N8nClient:
                 path = f"webhook/{webhook_node['webhookId']}"
 
             # Webhook path extracted
-            return path
+            return str(path)
 
         except Exception as e:
             logger.error(f"Webhook extraction error: {e}")
@@ -141,7 +150,9 @@ class N8nClient:
         # Webhook URL constructed
         return full_url
 
-    def trigger_webhook(self, webhook_url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def trigger_webhook(
+        self, webhook_url: str, payload: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Trigger a webhook with the given payload. Tries both POST and GET methods.
 
