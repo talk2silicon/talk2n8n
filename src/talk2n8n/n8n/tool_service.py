@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from typing import Dict, Any, List, Optional
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from talk2n8n.n8n.client import N8nClient
 
 logger = logging.getLogger(__name__)

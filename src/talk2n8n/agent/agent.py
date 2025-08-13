@@ -17,7 +17,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
-from langchain.tools import StructuredTool
+from langchain_core.tools import StructuredTool
 
 
 # Local application imports
