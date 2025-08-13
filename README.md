@@ -20,7 +20,13 @@ Seamlessly execute any hosted n8n workflow (with a webhook trigger node) using e
 
 ---
 
-## Features
+## Roadmap
+
+- **Slack Integration:**
+  - Slack bot support is a planned future feature. The codebase contains preliminary scaffolding for Slack event handling, but this feature is not yet available to end users. Stay tuned for updates!
+
+---
+
 
 - 🤖 Natural language to workflow execution (Claude/OpenAI)
 - 🔄 LLM-powered workflow-to-tool conversion

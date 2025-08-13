@@ -36,7 +36,9 @@ class ToolFactory:
             A dictionary representing the tool with additional metadata
         """
         # Use provided values or fall back to config
-        webhook_base_url = (webhook_base_url or settings.N8N_WEBHOOK_BASE_URL).rstrip("/")
+        webhook_base_url = (webhook_base_url or settings.N8N_WEBHOOK_BASE_URL).rstrip(
+            "/"
+        )
         env = (env or settings.N8N_ENV).lower()
 
         try:
@@ -46,7 +48,7 @@ class ToolFactory:
 
             # Create a copy of the tool definition with additional metadata
             tool = tool_def.copy()
-            tool["webhook_url"] = f"{webhook_base_url}/{prefix}/{path}"
+            tool["webhook_url"] = f"{webhook_base_url}/{prefix}/{path}"  # noqa: E501
 
             # Add execute method if not present
             if "execute" not in tool:

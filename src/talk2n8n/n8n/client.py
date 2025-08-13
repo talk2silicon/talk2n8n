@@ -28,7 +28,9 @@ class N8nClient:
             base_url: Base URL of the n8n instance (default: from config)
             api_key: API key for n8n (default: from config)
         """
-        self.base_url = base_url or settings.N8N_BASE_URL or settings.N8N_WEBHOOK_BASE_URL
+        self.base_url = (
+            base_url or settings.N8N_BASE_URL or settings.N8N_WEBHOOK_BASE_URL
+        )
         self.api_key = api_key or settings.N8N_API_KEY
 
         # Set up requests session with default headers
@@ -38,7 +40,9 @@ class N8nClient:
         )
 
         if not self.base_url:
-            logger.warning("Neither N8N_BASE_URL nor N8N_WEBHOOK_BASE_URL is set in config")
+            logger.warning(
+                "Neither N8N_BASE_URL nor N8N_WEBHOOK_BASE_URL is set in config"
+            )
         if not self.api_key:
             logger.warning("N8N_API_KEY not set in config")
 
@@ -49,12 +53,13 @@ class N8nClient:
         Returns:
             List of workflow data if successful, None otherwise
         """
-        headers = {"X-N8N-API-KEY": self.api_key, "Accept": "application/json"}
-
         try:
             response = self.session.get(f"{self.base_url}/api/v1/workflows", timeout=10)
             response.raise_for_status()
-            return response.json().get("data", [])
+            data = response.json().get("data", [])
+            if isinstance(data, list):
+                return data
+            return []
         except Exception as e:
             logger.error(f"Failed to fetch workflows: {e}")
             return None
@@ -69,14 +74,15 @@ class N8nClient:
         Returns:
             Workflow data if successful, None otherwise
         """
-        headers = {"X-N8N-API-KEY": self.api_key, "Accept": "application/json"}
-
         try:
             response = self.session.get(
                 f"{self.base_url}/api/v1/workflows/{workflow_id}", timeout=10
             )
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            if isinstance(data, dict):
+                return data
+            return None
         except requests.exceptions.RequestException as e:
             logger.error(f"Error fetching workflow: {e}")
             return None
@@ -96,7 +102,9 @@ class N8nClient:
             nodes = workflow_data.get("nodes", [])
 
             # Find webhook nodes
-            webhook_nodes = [node for node in nodes if node.get("type") == "n8n-nodes-base.webhook"]
+            webhook_nodes = [
+                node for node in nodes if node.get("type") == "n8n-nodes-base.webhook"
+            ]
 
             if not webhook_nodes:
                 # No webhook nodes
@@ -105,6 +113,9 @@ class N8nClient:
             # Get the first webhook node's path from parameters
             webhook_node = webhook_nodes[0]
             path = webhook_node.get("parameters", {}).get("path", "")
+            # Ensure path is always a string
+            if not isinstance(path, str):
+                path = str(path) if path is not None else ""
 
             # Remove leading slash if present
             path = path.lstrip("/")
@@ -114,7 +125,7 @@ class N8nClient:
                 path = f"webhook/{webhook_node['webhookId']}"
 
             # Webhook path extracted
-            return path
+            return str(path)
 
         except Exception as e:
             logger.error(f"Webhook extraction error: {e}")
@@ -145,7 +156,9 @@ class N8nClient:
         # Webhook URL constructed
         return full_url
 
-    def trigger_webhook(self, webhook_url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def trigger_webhook(
+        self, webhook_url: str, payload: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Trigger a webhook with the given payload. Tries both POST and GET methods.
 
@@ -169,7 +182,7 @@ class N8nClient:
                 response = self.session.post(webhook_url, json=payload, timeout=10)
                 response.raise_for_status()
                 # POST successful
-            except Exception as e:
+            except Exception:
                 # Continue with GET request for any exception
                 # POST failed, trying GET
 
@@ -183,17 +196,17 @@ class N8nClient:
 
             return {"status": "success", "data": result}
 
-        except Exception as e:
-            logger.error(f"Webhook error: {e}")
+        except Exception as exc:
+            logger.error(f"Webhook error: {exc}")
 
-            error_response = {"status": "error", "message": str(e)}
+            error_response = {"status": "error", "message": str(exc)}
 
             # Add response details if available
-            if hasattr(e, "response") and e.response:
-                error_response["status_code"] = e.response.status_code
+            if hasattr(exc, "response") and exc.response:
+                error_response["status_code"] = exc.response.status_code
                 try:
-                    error_response["response"] = e.response.json()
-                except:
-                    error_response["response"] = e.response.text
+                    error_response["response"] = exc.response.json()
+                except Exception:
+                    error_response["response"] = exc.response.text
 
             return error_response

@@ -8,6 +8,7 @@ from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from talk2n8n.agent.agent import Agent
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class SlackHandler:
     """Handler for Slack events."""
 
-    def __init__(self, agent: Agent = None):
+    def __init__(self, agent: Optional[Agent] = None):
         """
         Initialize the Slack handler.
 
@@ -26,7 +27,8 @@ class SlackHandler:
 
         # Initialize Slack app
         self.app = App(
-            token=os.getenv("SLACK_BOT_TOKEN"), signing_secret=os.getenv("SLACK_SIGNING_SECRET")
+            token=os.getenv("SLACK_BOT_TOKEN"),
+            signing_secret=os.getenv("SLACK_SIGNING_SECRET"),
         )
 
         # Register event handlers
@@ -62,7 +64,7 @@ class SlackHandler:
             return
 
         # Process the message
-        user_id = message.get("user")
+        # user_id = message.get("user")
         text = message.get("text", "")
 
         # Message received
@@ -82,7 +84,7 @@ class SlackHandler:
             event: App mention event from Slack
             say: Function to send a message to the channel
         """
-        user_id = event.get("user")
+        # user_id = event.get("user")
         text = event.get("text", "")
 
         # Remove the bot mention from the text

@@ -4,9 +4,7 @@ import json
 import logging
 import os
 from typing import Dict, Any, List, Optional
-from urllib.parse import urljoin
-
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from talk2n8n.n8n.client import N8nClient
 
 logger = logging.getLogger(__name__)
@@ -61,6 +59,7 @@ class ToolExecutionError(ToolServiceError):
 
 
 class ToolService:
+    tools: Dict[str, Dict[str, Any]]
     """Service for managing n8n workflow tools with LLM-powered conversion."""
 
     def __init__(self, n8n_client: N8nClient, llm=None):
@@ -79,12 +78,16 @@ class ToolService:
     def sync_workflows(self) -> List[Dict[str, Any]]:
         """Download and convert all active workflows to tools using LLM."""
         logger.info("Syncing workflows to tools using LLM")
-        self.tools = {}  # Clear existing tools
+        self.tools = {}  # type: Dict[str, Dict[str, Any]]  # Clear existing tools
 
         try:
             workflows = self.n8n_client.get_workflows()
+            if not workflows:
+                return []
             for workflow in workflows:
-                logger.info(f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}")
+                logger.info(
+                    f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}"
+                )
                 if tool := self._convert_workflow_to_tool(workflow):
                     # Add webhook URL
                     prefix = "webhook-test" if self._env == "test" else "webhook"
@@ -93,7 +96,9 @@ class ToolService:
 
                     # Store tool
                     self.tools[tool["name"]] = tool
-                    logger.info(f"Registered tool: {tool['name']} -> {tool['webhook_url']}")
+                    logger.info(
+                        f"Registered tool: {tool['name']} -> {tool['webhook_url']}"
+                    )
 
             return list(self.tools.values())
 
@@ -126,7 +131,9 @@ class ToolService:
         """
         return list(self.tools.values())
 
-    def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_tool(
+        self, tool_name: str, params: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Execute a tool with parameters.
 
         Args:
@@ -145,7 +152,9 @@ class ToolService:
             tool = self.get_tool(tool_name)
             if not tool:
                 raise ToolNotFoundError(f"Tool '{tool_name}' not found")
-            logger.info(f"Calling tool '{tool_name}' with params: {json.dumps(params, indent=2)}")
+            logger.info(
+                f"Calling tool '{tool_name}' with params: {json.dumps(params, indent=2)}"
+            )
             # Get webhook URL
             webhook_url = tool["webhook_url"]
             if not webhook_url:
@@ -158,7 +167,9 @@ class ToolService:
             logger.error(f"Error executing tool '{tool_name}': {e}")
             return {"status": "error", "message": str(e), "tool": tool_name}
 
-    def _convert_workflow_to_tool(self, workflow: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _convert_workflow_to_tool(
+        self, workflow: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Convert workflow to tool using LLM analysis.
 
         Args:
@@ -182,14 +193,18 @@ class ToolService:
 
             # Get LLM response
             response = self.llm.invoke(messages)
-            logger.info(f"LLM output for workflow '{workflow.get('name', '')}': {response.content}")
+            logger.info(
+                f"LLM output for workflow '{workflow.get('name', '')}': {response.content}"
+            )
             # Parse response
             try:
                 tool_def = json.loads(response.content)
                 logger.info(
                     f"Successfully converted workflow {workflow.get('name')} to tool {tool_def.get('name')}"
                 )
-                return tool_def
+                if isinstance(tool_def, dict):
+                    return tool_def
+                return None
             except json.JSONDecodeError:
                 logger.error("Failed to parse LLM response as JSON")
                 return None

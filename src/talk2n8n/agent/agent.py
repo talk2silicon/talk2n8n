@@ -8,18 +8,17 @@ interact with n8n workflows, and execute tools based on user requests.
 # Standard library imports
 import logging
 import os
-from typing import Annotated, Any, Dict, List, Optional, Sequence, TypedDict, Union
+from typing import Annotated, Optional, Sequence, TypedDict
 
 # Third-party imports
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
-from langchain.tools import StructuredTool
-from pydantic import create_model, Field
+from langchain_core.tools import StructuredTool
+
 
 # Local application imports
 from talk2n8n.n8n.client import N8nClient
@@ -32,20 +31,28 @@ from talk2n8n.config.settings import settings
 
 def json_schema_to_pydantic_model(schema: dict, model_name: str = "ToolParams"):
     """Convert JSON schema to Pydantic model for tool argument validation."""
+    from pydantic import Field, create_model
+
     type_map = {
         "string": str,
         "integer": int,
         "boolean": bool,
         "number": float,
     }
-    fields = {}
+
     required = set(schema.get("required", []))
-    for prop, prop_schema in schema["properties"].items():
+    properties = schema.get("properties", {})
+
+    model_fields = {}
+    for prop, prop_schema in properties.items():
         typ = type_map.get(prop_schema.get("type"), str)
-        default = ... if prop in required else None
         desc = prop_schema.get("description", "")
-        fields[prop] = (typ, Field(default, description=desc))
-    return create_model(model_name, **fields)
+        if prop in required:
+            model_fields[prop] = (typ, Field(description=desc))
+        else:
+            model_fields[prop] = (typ, Field(default=None, description=desc))
+
+    return create_model(model_name, **model_fields)  # type: ignore
 
 
 logging.basicConfig(
@@ -95,10 +102,17 @@ class Agent:
             n8n_api_key: API key for n8n (default: from N8N_API_KEY env var)
         """
         # Set up the LLM
+        from pydantic.v1.types import SecretStr
+
+        api_key = os.getenv("CLAUDE_API_KEY")
+        api_key_secret = SecretStr(api_key) if api_key is not None else None
         self.llm = llm or ChatAnthropic(
-            model=os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229"),
+            model_name=os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229"),
             temperature=0.0,
-            api_key=os.getenv("CLAUDE_API_KEY"),
+            api_key=api_key_secret.get_secret_value() if api_key_secret else None,  # type: ignore
+            timeout=60,
+            stop=None,
+            base_url=None,
         )
 
         # Initialize n8n client
@@ -116,14 +130,21 @@ class Agent:
         logger.info("Agent initialized with LLM: %s", self.llm.__class__.__name__)
 
     def _initialize_graph(self):
-        logger.info("Initializing Agent")
+        """Initialize LangGraph state machine for the agent."""
+        # Implementation details...
+
+        logger.info(
+            "ToolService initialized with n8n_base_url: %s, api_key: %s",
+            self.n8n_client.base_url,
+            self.n8n_client.api_key,
+        )
 
         # Refresh tools from n8n
         self.tool_service.sync_workflows()
         logger.info("Creating LangGraph with the tools from the tool service")
         self.graph = self._create_agent_graph()
 
-    def _create_agent_graph(self) -> StateGraph:
+    def _create_agent_graph(self):
         """Create the n8n AI Agent graph using the standard LangGraph pattern."""
         # Create agent graph
 
@@ -144,8 +165,10 @@ class Agent:
 
             # Build Pydantic model from input_schema
             input_schema = tool_def.get("input_schema") or tool_def.get("parameters")
+            if input_schema is None or not isinstance(input_schema, dict):
+                continue
             args_model = json_schema_to_pydantic_model(
-                input_schema, model_name=tool_name.title() + "Params"
+                input_schema, model_name=str(tool_name).title() + "Params"
             )
 
             def make_tool_executor(tool_name):
@@ -156,6 +179,8 @@ class Agent:
 
                 return execute_tool
 
+            if not isinstance(tool_name, str):
+                continue
             langchain_tool = StructuredTool(
                 name=tool_name,
                 description=tool_description,
@@ -182,8 +207,9 @@ class Agent:
         graph.add_edge("tools", "chatbot")
         graph.add_edge(START, "chatbot")
 
-        # Compile the graph
-        return graph.compile()
+        # Compile the graph and return the compiled version
+        compiled_graph = graph.compile()
+        return compiled_graph
 
     def _chatbot(self, state: AgentState):
         """Process the user message and generate a response."""
@@ -216,11 +242,11 @@ class Agent:
 
             # Invoke the model and return updated state
             response = model_with_tools.invoke(messages)
-            return {"messages": messages + [response]}
+            return {"messages": list(messages) + [response]}
         except Exception as e:
             logger.error(f"Error processing message: {e}")
             return {
-                "messages": messages
+                "messages": list(messages)
                 + [HumanMessage(content=f"Error processing your request: {str(e)}")]
             }
 
@@ -239,7 +265,9 @@ class Agent:
         # Limit maximum tool calls
         MAX_TOOL_CALLS = 10
         if tool_call_count >= MAX_TOOL_CALLS:
-            logger.warning(f"Reached maximum tool calls ({MAX_TOOL_CALLS}), ending conversation")
+            logger.warning(
+                f"Reached maximum tool calls ({MAX_TOOL_CALLS}), ending conversation"
+            )
             return END
 
         # Check if the last message has tool calls
@@ -270,7 +298,7 @@ class Agent:
             if messages := result.get("messages", []):
                 for msg in reversed(messages):
                     if hasattr(msg, "content") and msg.content:
-                        return msg.content
+                        return str(msg.content)
 
             return "No response generated"
 

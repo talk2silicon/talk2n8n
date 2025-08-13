@@ -89,21 +89,11 @@ serve-docs = "python -m http.server --directory docs/_build/html 8000"
 check = "poetry run pre-commit run --all-files"
 
 [tool.black]
-line-length = 100
+line-length = 88
 target-version = ['py39']
 include = '\.pyi?$'
 exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
+/_version\.py$
 '''
 
 [tool.isort]
@@ -120,9 +110,12 @@ disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 python_files = "test_*.py"
 python_functions = "test_*"
 python_classes = "Test*"
+addopts = "-v --tb=short"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.setuptools.packages.find]
 where = ["src"]
