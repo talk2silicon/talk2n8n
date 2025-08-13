@@ -31,9 +31,11 @@ class Settings(BaseSettings):
     )
 
     # LLM Configuration
-    CLAUDE_API_KEY: str = Field(..., description="Claude API key for LLM access")
+    CLAUDE_API_KEY: str = Field(
+        "dummy-key", description="Claude API key for LLM access"
+    )
     CLAUDE_MODEL: str = Field(
-        ..., description="Claude model name (e.g., 'claude-3-opus-20240229')"
+        "claude-3-opus-20240229", description="Claude model name (e.g., 'claude-3-opus-20240229')"
     )
 
     # Logging Configuration
