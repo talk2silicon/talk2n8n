@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         description="Base URL for n8n instance (optional, overrides webhook base URL if set)",
     )
     N8N_WEBHOOK_BASE_URL: str = Field(
-        ...,
+        "http://localhost:5678",
         description="Base URL for n8n webhooks (e.g., 'https://your-n8n-instance.com')",
     )
     N8N_API_KEY: Optional[str] = Field(
