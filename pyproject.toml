@@ -8,7 +8,7 @@ write_to = "src/talk2n8n/_version.py"
 
 [project]
 name = "talk2n8n"
-version = "0.1.0"
+version = "1.0.0"
 description = "A tool for interacting with n8n workflows through natural language"
 readme = "README.md"
 authors = [
@@ -54,11 +54,20 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/talk2n8n"
-Documentation = "https://github.com/yourusername/talk2n8n#readme"
-Repository = "https://github.com/yourusername/talk2n8n"
-Changelog = "https://github.com/yourusername/talk2n8n/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/talk2silicon/talk2n8n"
+Documentation = "https://github.com/talk2silicon/talk2n8n#readme"
+Repository = "https://github.com/talk2silicon/talk2n8n"
+Changelog = "https://github.com/talk2silicon/talk2n8n/blob/main/CHANGELOG.md"
 Issues = "https://github.com/yourusername/talk2n8n/issues"
+
+[project.scripts]
+talk2n8n = "talk2n8n.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [project.optional-dependencies]
 # Minimal development dependencies following talk2browser pattern
@@ -75,9 +84,6 @@ dev = [
     # Type stubs
     "types-requests>=2.0.0",
 ]
-
-[project.scripts]
-talk2n8n = "talk2n8n.cli:main"
 
 [tool.poetry.scripts]
 lint = "pre-commit run --all-files"
@@ -117,6 +123,3 @@ python_classes = "Test*"
 addopts = "-v --tb=short"
 asyncio_default_fixture_loop_scope = "function"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["agent*", "n8n*", "slack*", "config*"]
