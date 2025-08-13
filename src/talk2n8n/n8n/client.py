@@ -28,7 +28,9 @@ class N8nClient:
             base_url: Base URL of the n8n instance (default: from config)
             api_key: API key for n8n (default: from config)
         """
-        self.base_url = base_url or settings.N8N_BASE_URL or settings.N8N_WEBHOOK_BASE_URL
+        self.base_url = (
+            base_url or settings.N8N_BASE_URL or settings.N8N_WEBHOOK_BASE_URL
+        )
         self.api_key = api_key or settings.N8N_API_KEY
 
         # Set up requests session with default headers
@@ -38,7 +40,9 @@ class N8nClient:
         )
 
         if not self.base_url:
-            logger.warning("Neither N8N_BASE_URL nor N8N_WEBHOOK_BASE_URL is set in config")
+            logger.warning(
+                "Neither N8N_BASE_URL nor N8N_WEBHOOK_BASE_URL is set in config"
+            )
         if not self.api_key:
             logger.warning("N8N_API_KEY not set in config")
 
@@ -98,7 +102,9 @@ class N8nClient:
             nodes = workflow_data.get("nodes", [])
 
             # Find webhook nodes
-            webhook_nodes = [node for node in nodes if node.get("type") == "n8n-nodes-base.webhook"]
+            webhook_nodes = [
+                node for node in nodes if node.get("type") == "n8n-nodes-base.webhook"
+            ]
 
             if not webhook_nodes:
                 # No webhook nodes

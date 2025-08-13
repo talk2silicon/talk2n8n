@@ -19,16 +19,22 @@ class Settings(BaseSettings):
         description="Base URL for n8n instance (optional, overrides webhook base URL if set)",
     )
     N8N_WEBHOOK_BASE_URL: str = Field(
-        ..., description="Base URL for n8n webhooks (e.g., 'https://your-n8n-instance.com')"
+        ...,
+        description="Base URL for n8n webhooks (e.g., 'https://your-n8n-instance.com')",
     )
-    N8N_API_KEY: Optional[str] = Field(default=None, description="API key for n8n authentication")
+    N8N_API_KEY: Optional[str] = Field(
+        default=None, description="API key for n8n authentication"
+    )
     N8N_ENV: str = Field(
-        default="development", description="Environment (development, test, staging, production)"
+        default="development",
+        description="Environment (development, test, staging, production)",
     )
 
     # LLM Configuration
     CLAUDE_API_KEY: str = Field(..., description="Claude API key for LLM access")
-    CLAUDE_MODEL: str = Field(..., description="Claude model name (e.g., 'claude-3-opus-20240229')")
+    CLAUDE_MODEL: str = Field(
+        ..., description="Claude model name (e.g., 'claude-3-opus-20240229')"
+    )
 
     # Logging Configuration
     LOG_LEVEL: str = Field(

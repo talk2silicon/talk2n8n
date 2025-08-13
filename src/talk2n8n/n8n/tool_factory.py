@@ -36,7 +36,9 @@ class ToolFactory:
             A dictionary representing the tool with additional metadata
         """
         # Use provided values or fall back to config
-        webhook_base_url = (webhook_base_url or settings.N8N_WEBHOOK_BASE_URL).rstrip("/")
+        webhook_base_url = (webhook_base_url or settings.N8N_WEBHOOK_BASE_URL).rstrip(
+            "/"
+        )
         env = (env or settings.N8N_ENV).lower()
 
         try:

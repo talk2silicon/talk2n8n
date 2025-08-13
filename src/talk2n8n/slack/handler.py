@@ -27,7 +27,8 @@ class SlackHandler:
 
         # Initialize Slack app
         self.app = App(
-            token=os.getenv("SLACK_BOT_TOKEN"), signing_secret=os.getenv("SLACK_SIGNING_SECRET")
+            token=os.getenv("SLACK_BOT_TOKEN"),
+            signing_secret=os.getenv("SLACK_SIGNING_SECRET"),
         )
 
         # Register event handlers

@@ -85,7 +85,9 @@ class ToolService:
             if not workflows:
                 return []
             for workflow in workflows:
-                logger.info(f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}")
+                logger.info(
+                    f"Workflow JSON before conversion: {json.dumps(workflow, indent=2)}"
+                )
                 if tool := self._convert_workflow_to_tool(workflow):
                     # Add webhook URL
                     prefix = "webhook-test" if self._env == "test" else "webhook"
@@ -94,7 +96,9 @@ class ToolService:
 
                     # Store tool
                     self.tools[tool["name"]] = tool
-                    logger.info(f"Registered tool: {tool['name']} -> {tool['webhook_url']}")
+                    logger.info(
+                        f"Registered tool: {tool['name']} -> {tool['webhook_url']}"
+                    )
 
             return list(self.tools.values())
 
@@ -127,7 +131,9 @@ class ToolService:
         """
         return list(self.tools.values())
 
-    def execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def execute_tool(
+        self, tool_name: str, params: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Execute a tool with parameters.
 
         Args:
@@ -146,7 +152,9 @@ class ToolService:
             tool = self.get_tool(tool_name)
             if not tool:
                 raise ToolNotFoundError(f"Tool '{tool_name}' not found")
-            logger.info(f"Calling tool '{tool_name}' with params: {json.dumps(params, indent=2)}")
+            logger.info(
+                f"Calling tool '{tool_name}' with params: {json.dumps(params, indent=2)}"
+            )
             # Get webhook URL
             webhook_url = tool["webhook_url"]
             if not webhook_url:
@@ -159,7 +167,9 @@ class ToolService:
             logger.error(f"Error executing tool '{tool_name}': {e}")
             return {"status": "error", "message": str(e), "tool": tool_name}
 
-    def _convert_workflow_to_tool(self, workflow: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _convert_workflow_to_tool(
+        self, workflow: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Convert workflow to tool using LLM analysis.
 
         Args:
@@ -183,7 +193,9 @@ class ToolService:
 
             # Get LLM response
             response = self.llm.invoke(messages)
-            logger.info(f"LLM output for workflow '{workflow.get('name', '')}': {response.content}")
+            logger.info(
+                f"LLM output for workflow '{workflow.get('name', '')}': {response.content}"
+            )
             # Parse response
             try:
                 tool_def = json.loads(response.content)
