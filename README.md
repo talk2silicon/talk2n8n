@@ -20,21 +20,16 @@ Seamlessly execute any hosted n8n workflow (with a webhook trigger node) using e
 
 ---
 
+[![Watch the talk2n8n YouTube Demo](https://img.youtube.com/vi/yzzQ9eDPTyw/0.jpg)](https://youtu.be/yzzQ9eDPTyw)
+
+Watch a quick demo of talk2n8n in action: [https://youtu.be/yzzQ9eDPTyw](https://youtu.be/yzzQ9eDPTyw)
+
+---
+
 ## Roadmap
 
 - **Slack Integration:**
   - Slack bot support is a planned future feature. The codebase contains preliminary scaffolding for Slack event handling, but this feature is not yet available to end users. Stay tuned for updates!
-
----
-
-
-- 🤖 Natural language to workflow execution (Claude/OpenAI)
-- 🔄 LLM-powered workflow-to-tool conversion
-- 🧩 Seamless n8n webhook integration
-- 🧠 Intelligent parameter extraction and validation
-- ⚡ Fast, robust, and extensible architecture
-- 🔒 Secure API key and environment management
-- 🖥️ Interactive CLI and modern Gradio chat UI
 
 ---
 
